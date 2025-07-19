@@ -1,12 +1,12 @@
+// frontend/src/pages/AuthPage.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import api from '../services/api';
-import { Sun, Moon } from 'lucide-react';
 
-const AuthPage = ({ theme, toggleTheme }) => {
+const AuthPage = () => {
     const navigate = useNavigate();
     const [isLogin, setIsLogin] = useState(true);
     const [name, setName] = useState('');
@@ -14,10 +14,10 @@ const AuthPage = ({ theme, toggleTheme }) => {
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
 
+    // ** THIS IS THE FIX **
+    // If a token already exists, the user is logged in. Redirect them away from this page.
     useEffect(() => {
-        // If user is already logged in, redirect to dashboard
-        const token = localStorage.getItem('token');
-        if (token) {
+        if (localStorage.getItem('token')) {
             navigate('/dashboard');
         }
     }, [navigate]);
@@ -28,30 +28,20 @@ const AuthPage = ({ theme, toggleTheme }) => {
         const endpoint = isLogin ? '/auth/login' : '/auth/register';
         const payload = isLogin ? { email, password } : { name, email, password, role: 'student' };
         try {
-            const response = await api.post(endpoint, payload);
-            localStorage.setItem('token', response.data.token);
+            const { data } = await api.post(endpoint, payload);
+            localStorage.setItem('token', data.token);
             navigate('/dashboard');
         } catch (err) {
-            setError(err.response?.data?.message || 'An error occurred.');
+            setError(err.response?.data?.message || 'An error occurred. Please try again.');
         }
     };
-
-    const toggleAuthMode = () => {
-      setIsLogin(!isLogin);
-      setError('');
-    }
-
+    
     return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-900 p-4 relative">
-            <div className="absolute top-4 right-4">
-                <Button onClick={toggleTheme} variant="ghost" size="icon">
-                   {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-white"/>}
-                </Button>
-            </div>
+        <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-slate-900 p-4">
             <Card className="w-full max-w-sm">
                 <CardHeader>
-                    <CardTitle>{isLogin ? 'Welcome Back!' : 'Create an Account'}</CardTitle>
-                    <CardDescription>{isLogin ? 'Sign in to your dashboard.' : 'Enter your details to get started.'}</CardDescription>
+                    <CardTitle>{isLogin ? 'Sign In' : 'Create an Account'}</CardTitle>
+                    <CardDescription>{isLogin ? 'Enter your credentials to access your dashboard.' : 'Enter your details to get started.'}</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit}>
@@ -59,30 +49,31 @@ const AuthPage = ({ theme, toggleTheme }) => {
                             {!isLogin && (
                                 <div className="flex flex-col space-y-1.5">
                                     <label htmlFor="name" className="text-sm font-medium">Name</label>
-                                    <Input id="name" placeholder="Your full name" value={name} onChange={(e) => setName(e.target.value)} />
+                                    <Input id="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your Name" />
                                 </div>
                             )}
                             <div className="flex flex-col space-y-1.5">
                                 <label htmlFor="email" className="text-sm font-medium">Email</label>
-                                <Input id="email" type="email" placeholder="m@example.com" value={email} onChange={(e) => setEmail(e.target.value)} />
+                                <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="m@example.com" />
                             </div>
                             <div className="flex flex-col space-y-1.5">
                                 <label htmlFor="password" className="text-sm font-medium">Password</label>
-                                <Input id="password" type="password" placeholder="Your password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                                <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Your Password" />
                             </div>
-                            {error && <p className="text-sm text-red-600">{error}</p>}
-                            <Button type="submit" className="w-full">{isLogin ? 'Sign In' : 'Sign Up'}</Button>
+                            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+                            <Button type="submit" className="w-full mt-2">{isLogin ? 'Sign In' : 'Sign Up'}</Button>
                         </div>
                     </form>
                     <div className="mt-4 text-center text-sm">
-                       {isLogin ? "Don't have an account? " : "Already have an account? "}
-                       <button onClick={toggleAuthMode} className="underline font-medium">
-                         {isLogin ? "Sign Up" : "Sign In"}
-                       </button>
+                        {isLogin ? "Don't have an account? " : "Already have an account? "}
+                        <button onClick={() => setIsLogin(!isLogin)} className="underline font-medium">
+                            {isLogin ? "Sign Up" : "Sign In"}
+                        </button>
                     </div>
                 </CardContent>
             </Card>
         </div>
     );
 };
+
 export default AuthPage;
