@@ -6,7 +6,8 @@ const { connectDB } = require('./config/database');
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
-const courseRoutes = require('./routes/courseRoutes'); // <-- IMPORT NEW ROUTE
+const courseRoutes = require('./routes/courseRoutes');
+const enrollmentRoutes = require('./routes/enrollmentRoutes'); // <-- IMPORT
 
 // Load environment variables
 dotenv.config();
@@ -24,7 +25,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // API Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/courses', courseRoutes); // <-- USE NEW ROUTE
+app.use('/api/courses', courseRoutes);
+app.use('/api/enrollments', enrollmentRoutes); // <-- USE NEW ROUTE
 
 // Simple Base Route
 app.get('/', (req, res) => {
