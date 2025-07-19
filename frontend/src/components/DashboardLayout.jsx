@@ -3,12 +3,19 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Outlet, useNavigate, Link, NavLink as RouterNavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { jwtDecode } from 'jwt-decode';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { LogOut, User as UserIcon, Home, BookOpen, Sun, Moon, Settings } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from "@/components/ui/dropdown-menu";
+import { LogOut, User as UserIcon, Home, BookOpen, Settings } from 'lucide-react';
 import LoadingSpinner from './ui/LoadingSpinner';
 import { ThemeContext } from '../providers/ThemeProvider';
 
-// NavLink with active styling
+// Reusable NavLink component with active styling
 const NavLink = ({ to, children }) => (
     <RouterNavLink
         to={to}
@@ -22,18 +29,44 @@ const NavLink = ({ to, children }) => (
     </RouterNavLink>
 );
 
+
 export default function DashboardLayout() {
-    // ... (logic from previous step, no changes needed to the useEffect or handlers) ...
     const navigate = useNavigate();
+    const { theme, toggleTheme } = useContext(ThemeContext);
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const { theme, toggleTheme } = useContext(ThemeContext);
 
-    useEffect(() => { /* same as before */ setIsLoading(false); }, [navigate]);
-    if (isLoading || !user) return <LoadingSpinner />;
-    
-    // ... This is the start of the return statement from the previous correct step ...
-    // The following JSX is the professionally styled version
+    // *** THIS IS THE CRITICAL FIX ***
+    // This logic now correctly sets the user, and ONLY THEN, turns off the loading screen.
+    useEffect(() => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            try {
+                const decodedUser = jwtDecode(token);
+                setUser(decodedUser);
+            } catch (error) {
+                // Invalid token found, clear it and redirect to login
+                localStorage.removeItem('token');
+                navigate('/login');
+            }
+        } else {
+            // No token found, redirect to login
+            navigate('/login');
+        }
+        // This is crucial: setIsLoading(false) runs AFTER the user state is determined.
+        setIsLoading(false);
+    }, [navigate]);
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
+
+    // The logic to display the spinner. It's now impossible to get stuck.
+    if (isLoading) {
+        return <LoadingSpinner />;
+    }
+
     return (
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
             <div className="hidden border-r bg-muted/40 md:block">
@@ -41,14 +74,13 @@ export default function DashboardLayout() {
                     <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
                         <Link to="/" className="flex items-center gap-2 font-semibold">
                             <BookOpen className="h-6 w-6 text-primary" />
-                            <span className="">EduTrack</span>
+                            <span>EduTrack</span>
                         </Link>
                     </div>
                     <div className="flex-1">
                         <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
                             <NavLink to="/dashboard"><Home className="h-4 w-4" />Dashboard</NavLink>
                             <NavLink to="/dashboard/profile"><UserIcon className="h-4 w-4" />Profile</NavLink>
-                            {/* More links would go here */}
                         </nav>
                     </div>
                 </div>
@@ -56,16 +88,16 @@ export default function DashboardLayout() {
 
             <div className="flex flex-col">
                 <header className="flex h-14 items-center gap-4 border-b bg-muted/40 px-4 dark:bg-muted/40 lg:h-[60px] lg:px-6">
-                    <div className="w-full flex-1"></div>
+                    <div className="w-full flex-1" />
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild><Button variant="secondary" size="icon" className="rounded-full"><UserIcon className="h-5 w-5" /></Button></DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-56">
-                            <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+                            <DropdownMenuLabel>{user ? user.email : "My Account"}</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem asChild><Link to="/dashboard/profile">Profile</Link></DropdownMenuItem>
                             <DropdownMenuItem onClick={toggleTheme}><Settings className="mr-2 h-4 w-4" />Toggle Theme</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => {localStorage.removeItem('token'); navigate('/login');}} className="text-red-500 cursor-pointer"><LogOut className="mr-2 h-4 w-4" />Logout</DropdownMenuItem>
+                            <DropdownMenuItem onClick={handleLogout} className="text-red-500 cursor-pointer"><LogOut className="mr-2 h-4 w-4" />Logout</DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
                 </header>
