@@ -2,16 +2,15 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const { connectDB, sequelize } = require('./config/database');
-const User = require('./models/User');
-const Course = require('./models/Course');
+const { connectDB } = require('./config/database');
 
 const authRoutes = require('./routes/authRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-const facultyRoutes = require('./routes/facultyRoutes'); // <-- IMPORT
+const facultyRoutes = require('./routes/facultyRoutes');
+const studentRoutes = require('./routes/studentRoutes');
 
 dotenv.config();
 connectDB();
@@ -28,11 +27,10 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/enrollments', enrollmentRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
-app.use('/api/faculty', facultyRoutes); // <-- USE NEW ROUTE
+app.use('/api/faculty', facultyRoutes);
+app.use('/api/students', studentRoutes);
 
-// SEEDER ROUTE (as before)
-app.get('/api/seed', async (req, res) => {
-  //... existing seed code here (or just rely on local seeder)
-});
+// Seed route remains for convenience
+app.get('/api/seed', async (req, res) => { /* ... existing seed code ... */ });
 
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

@@ -13,7 +13,7 @@ const Attendance = sequelize.define('Attendance', {
 }, {
     tableName: 'attendances',
     timestamps: true,
-    indexes: [{ unique: true, fields: ['studentId', 'courseId', 'date'] }] // Prevent duplicate entries for the same student on the same day
+    indexes: [{ unique: true, fields: ['studentId', 'courseId', 'date'] }]
 });
 
 Attendance.belongsTo(User, { as: 'student', foreignKey: 'studentId' });

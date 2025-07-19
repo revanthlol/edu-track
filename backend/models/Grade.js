@@ -21,24 +21,26 @@ const Grade = sequelize.define('Grade', {
     studentId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: { model: User, key: 'id' }
+        references: { model: User, key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
     },
     courseId: {
         type: DataTypes.INTEGER,
         allowNull: false,
-        references: { model: Course, key: 'id' }
+        references: { model: Course, key: 'id' },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
     }
 }, {
     tableName: 'grades',
     timestamps: true,
-    // Ensure a student can only have one grade per course
     indexes: [{
         unique: true,
-        fields: ['studentId', 'courseId']
+        fields: ['studentId', 'courseId'] // A student can only have one final grade per course
     }]
 });
 
-// Define associations
 Grade.belongsTo(User, { as: 'student', foreignKey: 'studentId' });
 Grade.belongsTo(Course, { foreignKey: 'courseId' });
 
