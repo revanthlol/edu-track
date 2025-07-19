@@ -1,55 +1,67 @@
 // backend/server.js
 
-// Core Node.js modules
+// --- Core Node.js and npm package imports ---
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
 
-// Local module imports
+// --- Local module imports ---
+// Database connection and models
 const { connectDB, sequelize } = require('./config/database');
 const User = require('./models/User');
 const Course = require('./models/Course');
 const Enrollment = require('./models/Enrollment');
 
-// Route imports
+// Route handlers for different parts of the API
 const authRoutes = require('./routes/authRoutes');
 const courseRoutes = require('./routes/courseRoutes');
 const enrollmentRoutes = require('./routes/enrollmentRoutes');
 const userRoutes = require('./routes/userRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 
-// Load environment variables from .env file
+// --- Initial Server Setup ---
+// Load environment variables from the .env file into process.env
 dotenv.config();
 
-// *** CRITICAL ***
-// Connect to the database as soon as the application starts.
+// *** CRITICAL STEP ***
+// Establish the connection to the database as soon as the application starts.
 connectDB();
 
-// Initialize the Express app
+// Initialize the main Express application
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// --- Middlewares ---
-// Enable Cross-Origin Resource Sharing for all origins
+
+// --- Global Middlewares ---
+// Enable Cross-Origin Resource Sharing (CORS) for all incoming requests
 app.use(cors());
-// To parse JSON request bodies
+
+// Enable the Express app to parse incoming request bodies with JSON payloads
 app.use(express.json());
-// To parse URL-encoded request bodies
+
+// Enable the Express app to parse incoming request bodies with URL-encoded payloads
 app.use(express.urlencoded({ extended: true }));
 
 
-// --- API Routes ---
-// Mount the various routers on their respective paths
+// --- API Route Definitions ---
+// Mount the various routers on their designated URL paths.
+// Any request starting with '/api/auth' will be handled by authRoutes.
 app.use('/api/auth', authRoutes);
+// Any request starting with '/api/courses' will be handled by courseRoutes.
 app.use('/api/courses', courseRoutes);
+// Any request starting with '/api/enrollments' will be handled by enrollmentRoutes.
 app.use('/api/enrollments', enrollmentRoutes);
+// Any request starting with '/api/users' will be handled by userRoutes.
 app.use('/api/users', userRoutes);
+// Any request starting with '/api/admin' will be handled by adminRoutes.
+app.use('/api/admin', adminRoutes);
 
 
-// --- Secure, One-Time Seeding Endpoint ---
-// This special route is used to initialize the database.
-// Access is restricted by a secret key stored in environment variables.
+// --- Secure, One-Time Database Seeding Endpoint ---
+// This is a special, powerful route used ONLY to initialize the database.
+// To prevent unauthorized use, it is protected by a secret key.
 app.get('/api/seed', async (req, res) => {
-    // 1. Check for the secret key to prevent unauthorized access
+    // 1. Check for the secret key passed as a query parameter
     if (req.query.secret !== process.env.SEED_SECRET) {
         return res.status(403).json({ message: 'Forbidden: Invalid secret key for seeding.' });
     }
@@ -57,31 +69,36 @@ app.get('/api/seed', async (req, res) => {
     try {
         console.log('--- DATABASE SEEDING INITIATED VIA SECURE ENDPOINT ---');
         
-        // 2. Drop all existing tables and recreate them based on Sequelize models
+        // 2. Force-sync Sequelize models with the database.
+        // { force: true } will DROP all existing tables and recreate them.
         await sequelize.sync({ force: true });
         console.log('Tables dropped and recreated successfully.');
 
-        // 3. Create a default administrator user
-        await User.create({
-            name: 'Admin',
-            email: 'admin@edu.track',
-            password: 'password123', // This will be hashed automatically by the User model's 'beforeCreate' hook
-            role: 'admin',
-        });
-        console.log('Default admin user created.');
+        // 3. Populate the 'users' table with a default admin and sample students
+        const admin = await User.create({ name: 'Admin', email: 'admin@edu.track', password: 'password123', role: 'admin' });
+        const students = await User.bulkCreate([
+            { name: 'Alice Johnson', email: 'alice@test.com', password: 'password123' },
+            { name: 'Bob Williams', email: 'bob@test.com', password: 'password123' },
+        ]);
+        console.log('Default admin and student users created.');
 
-        // 4. Populate the database with sample courses
-        await Course.bulkCreate([
-            { courseName: 'Introduction to Programming', description: 'Learn the fundamentals of programming using JavaScript.', credits: 3 },
-            { courseName: 'Advanced Web Development', description: 'Deep dive into modern web technologies like React and Node.js.', credits: 4 },
-            { courseName: 'Database Design & Management', description: 'Master SQL and NoSQL database design principles.', credits: 4 },
-            { courseName: 'Software Engineering Principles', description: 'Explore the methodologies of building large-scale software.', credits: 3 },
-            { courseName: 'Cloud Computing Fundamentals', description: 'An introduction to AWS, Azure, and Google Cloud.', credits: 3 },
+        // 4. Populate the 'courses' table with sample data
+        const courses = await Course.bulkCreate([
+            { courseName: 'Intro to Programming', description: 'JS fundamentals.', credits: 3 },
+            { courseName: 'Advanced Web Dev', description: 'React and Node.js.', credits: 4 },
+            { courseName: 'Database Design', description: 'SQL mastery.', credits: 4 },
         ]);
         console.log('Sample courses created.');
         
-        // 5. Send a success response
-        res.status(200).json({ message: 'Database seeded successfully! You can now log in with admin@edu.track and password "password123".' });
+        // 5. Create some sample enrollments to link users and courses
+        await Enrollment.bulkCreate([
+            { userId: students[0].id, courseId: courses[0].id },
+            { userId: students[1].id, courseId: courses[1].id },
+        ]);
+        console.log('Sample enrollments created.');
+        
+        // 6. Send a success response
+        res.status(200).json({ message: 'Database seeded successfully!' });
 
     } catch (error) {
         console.error('--- SEEDING FAILED ---', error);
@@ -91,6 +108,7 @@ app.get('/api/seed', async (req, res) => {
 
 
 // --- Server Startup ---
+// Start the Express server and listen for incoming connections on the specified port.
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
