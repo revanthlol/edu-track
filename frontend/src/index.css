@@ -51,7 +51,8 @@
 
 @layer base {
   * {
-    @apply border-border;
+    /* THIS IS THE FIX: Use standard CSS, not @apply */
+    border-color: hsl(var(--border));
   }
   body {
     @apply bg-background text-foreground;
