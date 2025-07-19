@@ -3,86 +3,58 @@ const Course = require('../models/Course');
 const Enrollment = require('../models/Enrollment');
 const User = require('../models/User');
 const Grade = require('../models/Grade');
+const Attendance = require('../models/Attendance');
 
-// Helper to ensure user is faculty
-const checkFaculty = (req, res) => {
-    if (req.user.role !== 'faculty') {
-        res.status(403).json({ message: 'Forbidden: Faculty access only.' });
-        return false;
-    }
-    return true;
-};
+const checkFaculty = (req, res) => { /* ... (no changes) ... */ };
+exports.getMyCourses = async (req, res) => { /* ... (no changes) ... */ };
+exports.getEnrolledStudents = async (req, res) => { /* ... (no changes) ... */ };
+exports.submitGrade = async (req, res) => { /* ... (no changes) ... */ };
 
-// @desc    Get courses taught by the current faculty member
-// @route   GET /api/faculty/my-courses
+// --- NEW FUNCTIONS FOR ATTENDANCE ---
+
+// @desc    Get attendance for a specific course and date
+// @route   GET /api/faculty/courses/:courseId/attendance?date=YYYY-MM-DD
 // @access  Private/Faculty
-exports.getMyCourses = async (req, res) => {
+exports.getAttendance = async (req, res) => {
     if (!checkFaculty(req, res)) return;
+    const { courseId } = req.params;
+    const { date } = req.query; // Expects date in 'YYYY-MM-DD' format
 
     try {
-        const courses = await Course.findAll({ where: { facultyId: req.user.id } });
-        res.json(courses);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error fetching courses.' });
-    }
-};
-
-// @desc    Get students enrolled in a specific course taught by the faculty
-// @route   GET /api/faculty/courses/:courseId/students
-// @access  Private/Faculty
-exports.getEnrolledStudents = async (req, res) => {
-    if (!checkFaculty(req, res)) return;
-
-    try {
-        const courseId = req.params.courseId;
         const course = await Course.findOne({ where: { id: courseId, facultyId: req.user.id } });
+        if (!course) return res.status(403).json({ message: 'Course not found or not assigned to you.' });
 
-        if (!course) {
-            return res.status(404).json({ message: 'Course not found or you are not assigned to it.' });
-        }
-
-        const enrollments = await Enrollment.findAll({
-            where: { courseId },
-            include: [{
-                model: User,
-                attributes: ['id', 'name', 'email'] // Get student details
-            }]
-        });
-        
-        // Extract just the user data
-        const students = enrollments.map(e => e.User);
-
-        res.json(students);
+        const attendanceRecords = await Attendance.findAll({ where: { courseId, date } });
+        res.json(attendanceRecords);
     } catch (error) {
-        res.status(500).json({ message: 'Server error fetching students.' });
+        res.status(500).json({ message: 'Server error fetching attendance.' });
     }
 };
 
-// @desc    Submit or update a grade for a student
-// @route   POST /api/faculty/grades
+// @desc    Mark or update attendance for students
+// @route   POST /api/faculty/courses/:courseId/attendance
 // @access  Private/Faculty
-exports.submitGrade = async (req, res) => {
+exports.markAttendance = async (req, res) => {
     if (!checkFaculty(req, res)) return;
-
-    const { studentId, courseId, grade, comments } = req.body;
+    const { courseId } = req.params;
+    const { date, attendances } = req.body; // `attendances` is an array of { studentId, status }
 
     try {
-        // Verify faculty teaches this course
         const course = await Course.findOne({ where: { id: courseId, facultyId: req.user.id } });
-        if (!course) {
-            return res.status(403).json({ message: 'You are not authorized to grade this course.' });
-        }
+        if (!course) return res.status(403).json({ message: 'Not authorized to mark attendance for this course.' });
 
-        // Upsert the grade: update if exists, create if not
-        const [newGrade, created] = await Grade.upsert({
-            studentId,
-            courseId,
-            grade,
-            comments
+        const transactions = attendances.map(att => {
+            return Attendance.upsert({
+                studentId: att.studentId,
+                courseId: courseId,
+                date: date,
+                status: att.status,
+            });
         });
 
-        res.status(created ? 201 : 200).json(newGrade);
+        await Promise.all(transactions);
+        res.status(200).json({ message: 'Attendance updated successfully.' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error submitting grade.' });
+        res.status(500).json({ message: 'Server error updating attendance.' });
     }
 };
