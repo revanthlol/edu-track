@@ -1,51 +1,97 @@
 // frontend/src/pages/CourseManagementPage.jsx
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import api from '@/services/api';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Checkbox } from "@/components/ui/checkbox"
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { format } from 'date-fns';
 
-const GradeDialog = ({ student, courseId, onGradeSubmitted }) => {
+// GRADING COMPONENT
+const GradeManager = ({ students, courseId }) => {
     const [grade, setGrade] = useState('');
     const [comments, setComments] = useState('');
 
-    const handleSubmit = async () => {
+    const handleSubmitGrade = async (studentId) => {
         try {
-            await api.post('/api/faculty/grades', {
-                studentId: student.id,
-                courseId,
-                grade,
-                comments
-            });
-            onGradeSubmitted(); // This could trigger a refresh
-        } catch (err) {
-            alert('Failed to submit grade.');
-        }
+            await api.post('/api/faculty/grades', { studentId, courseId, grade, comments });
+            // Ideally, close dialog and refresh grades list
+        } catch (err) { alert('Failed to submit grade.'); }
     };
 
     return (
-        <DialogContent>
-            <DialogHeader>
-                <DialogTitle>Grade for {student.name}</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="grade" className="text-right">Grade (A-F)</Label>
-                    <Input id="grade" value={grade} onChange={e => setGrade(e.target.value)} className="col-span-3" maxLength="2" />
-                </div>
-                <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="comments" className="text-right">Comments</Label>
-                    <Input id="comments" value={comments} onChange={e => setComments(e.target.value)} className="col-span-3" />
-                </div>
-            </div>
-            <Button onClick={handleSubmit}>Submit Grade</Button>
-        </DialogContent>
+        <Table>
+            <TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Email</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+            <TableBody>
+                {students.map(student => (
+                    <TableRow key={student.id}>
+                        <TableCell className="font-medium">{student.name}</TableCell>
+                        <TableCell>{student.email}</TableCell>
+                        <TableCell className="text-right">
+                            <Dialog>
+                                <DialogTrigger asChild><Button>Enter Grade</Button></DialogTrigger>
+                                <DialogContent>
+                                    <DialogHeader><DialogTitle>Enter Grade for {student.name}</DialogTitle></DialogHeader>
+                                    <div className="grid gap-4 py-4">
+                                        <Input placeholder="Grade (A-F)" value={grade} onChange={e => setGrade(e.target.value.toUpperCase())} />
+                                        <Input placeholder="Comments" value={comments} onChange={e => setComments(e.target.value)} />
+                                    </div>
+                                    <Button onClick={() => handleSubmitGrade(student.id)}>Submit</Button>
+                                </DialogContent>
+                            </Dialog>
+                        </TableCell>
+                    </TableRow>
+                ))}
+            </TableBody>
+        </Table>
     );
 };
+
+// ATTENDANCE COMPONENT
+const AttendanceManager = ({ students, courseId }) => {
+    const [attendance, setAttendance] = useState({});
+    const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+
+    const handleStatusChange = (studentId, status) => {
+        setAttendance(prev => ({ ...prev, [studentId]: status }));
+    };
+    
+    const handleSaveAttendance = async () => {
+        const payload = Object.entries(attendance).map(([studentId, status]) => ({ studentId, status }));
+        try {
+            await api.post(`/api/faculty/courses/${courseId}/attendance`, { date, attendances: payload });
+            alert('Attendance saved!');
+        } catch (err) { alert('Failed to save attendance.'); }
+    };
+    
+    return (
+        <div className="space-y-4">
+             <div className="flex items-center gap-4">
+                <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-auto" />
+                <Button onClick={handleSaveAttendance}>Save Attendance for {date}</Button>
+            </div>
+            <Table>
+                 <TableHeader><TableRow><TableHead>Student</TableHead><TableHead>Present</TableHead><TableHead>Absent</TableHead><TableHead>Late</TableHead></TableRow></TableHeader>
+                <TableBody>
+                     {students.map(student => (
+                         <TableRow key={student.id}>
+                            <TableCell>{student.name}</TableCell>
+                            <TableCell><Checkbox checked={attendance[student.id] === 'Present'} onCheckedChange={() => handleStatusChange(student.id, 'Present')} /></TableCell>
+                            <TableCell><Checkbox checked={attendance[student.id] === 'Absent'} onCheckedChange={() => handleStatusChange(student.id, 'Absent')} /></TableCell>
+                            <TableCell><Checkbox checked={attendance[student.id] === 'Late'} onCheckedChange={() => handleStatusChange(student.id, 'Late')} /></TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </div>
+    )
+};
+
 
 const CourseManagementPage = () => {
     const { courseId } = useParams();
@@ -60,24 +106,17 @@ const CourseManagementPage = () => {
     }, [courseId]);
 
     if (isLoading) return <LoadingSpinner />;
+    if (students.length === 0) return <Card><CardHeader><CardTitle>No Students Enrolled</CardTitle><CardContent><p>There are currently no students enrolled in this course.</p></CardContent></CardHeader></Card>;
 
     return (
-        <Card>
-            <CardHeader><CardTitle>Enrolled Students</CardTitle></CardHeader>
-            <CardContent>
-                <div className="space-y-2">
-                    {students.map(student => (
-                        <Dialog key={student.id}>
-                            <div className="flex justify-between items-center p-2 border rounded">
-                                <p>{student.name} ({student.email})</p>
-                                <DialogTrigger asChild><Button>Assign Grade</Button></DialogTrigger>
-                            </div>
-                            <GradeDialog student={student} courseId={courseId} onGradeSubmitted={() => {}} />
-                        </Dialog>
-                    ))}
-                </div>
-            </CardContent>
-        </Card>
+        <Tabs defaultValue="grades">
+            <TabsList>
+                <TabsTrigger value="grades">Manage Grades</TabsTrigger>
+                <TabsTrigger value="attendance">Track Attendance</TabsTrigger>
+            </TabsList>
+            <TabsContent value="grades"><GradeManager students={students} courseId={courseId} /></TabsContent>
+            <TabsContent value="attendance"><AttendanceManager students={students} courseId={courseId} /></TabsContent>
+        </Tabs>
     );
 };
 export default CourseManagementPage;
