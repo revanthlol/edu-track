@@ -1,13 +1,14 @@
- import React from 'react'
-    import ReactDOM from 'react-dom/client'
-    import App from './App.jsx'
-    import './index.css'
-    import { ThemeProvider } from './providers/ThemeProvider.jsx' // <-- IMPORT
+// frontend/src/main.jsx
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import App from './App.jsx'
+import './index.css'
+import { ThemeProvider } from './providers/ThemeProvider.jsx'
 
-    ReactDOM.createRoot(document.getElementById('root')).render(
-      <React.StrictMode>
-        <ThemeProvider> //  -- WRAP HERE
-          <App />
-        </ThemeProvider>
-      </React.StrictMode>,
-    )
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    <ThemeProvider>
+      <App />
+    </ThemeProvider>
+  </React.StrictMode>,
+)
