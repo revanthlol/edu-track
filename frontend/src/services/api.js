@@ -1,8 +1,9 @@
 // frontend/src/services/api.js
 import axios from 'axios';
 
+// The '/api' prefix will be rewritten by vercel.json to point to the backend
 const api = axios.create({
-    baseURL: 'http://localhost:3001/api', // Your backend API URL
+    baseURL: '/api', 
     headers: {
         'Content-Type': 'application/json'
     }
