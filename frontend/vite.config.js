@@ -10,4 +10,15 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // --- ADD THIS SERVER CONFIGURATION ---
+  server: {
+    proxy: {
+      // string shorthand: http://localhost:5173/api -> http://localhost:3001/api
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+      }
+    }
+  }
+  // --- END OF NEW CONFIGURATION ---
 })
