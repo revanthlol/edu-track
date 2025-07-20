@@ -3,6 +3,7 @@ const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
 const bcrypt = require('bcryptjs');
 const Department = require('./Department');
+const Attendance = require('./Attendance'); // <-- IMPORT AT TOP
 
 const User = sequelize.define('User', {
     id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },

@@ -1,28 +1,12 @@
-// frontend/src/pages/DashboardPage.jsx
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { jwtDecode } from 'jwt-decode';
 import AdminDashboard from '../components/dashboards/AdminDashboard';
 import StudentDashboard from '../components/dashboards/StudentDashboard';
-import FacultyDashboard from '../components/dashboards/FacultyDashboard'; // <-- IMPORT
-import LoadingSpinner from '../components/ui/LoadingSpinner';
-
-const DashboardPage = () => {
-    const [user, setUser] = useState(null);
-
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (token) {
-            try { setUser(jwtDecode(token)); } catch { setUser(null); }
-        }
-    }, []);
-
-    if (!user) return <LoadingSpinner />;
-
-    switch (user.role) {
-        case 'admin': return <AdminDashboard />;
-        case 'student': return <StudentDashboard />;
-        case 'faculty': return <FacultyDashboard />; // <-- RENDER FACULTY DASH
-        default: return <div>Your dashboard is not yet available.</div>;
-    }
-};
-export default DashboardPage;
+import FacultyDashboard from '../components/dashboards/FacultyDashboard';
+export default function DashboardPage() {
+    const user = jwtDecode(localStorage.getItem('token'));
+    if (user.role === 'admin') return <AdminDashboard />;
+    if (user.role === 'student') return <StudentDashboard />;
+    if (user.role === 'faculty') return <FacultyDashboard />;
+    return <div>Dashboard not configured for your role.</div>;
+}
