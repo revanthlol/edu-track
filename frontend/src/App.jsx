@@ -10,6 +10,7 @@ import StudentGradesPage from './pages/StudentGradesPage';
 import AdminUserManagementPage from './pages/AdminUserManagementPage';
 import DashboardLayout from './components/DashboardLayout';
 import PrivateRoute from './components/PrivateRoute';
+import StudentReportPage from './pages/StudentReportPage'; // <-- IMPORT
 
 function App() {
   return (
@@ -21,7 +22,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<DashboardPage />} />
             <Route path="profile" element={<ProfilePage />} />
-            <Route path="my-grades" element={<StudentGradesPage />} />
+            <Route path="my-grades" element={<StudentReportPage />} />
             <Route path="manage-users" element={<AdminUserManagementPage />} />
             <Route path="courses/:courseId" element={<CourseManagementPage />} />
           </Route>
