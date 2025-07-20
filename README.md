@@ -1,7 +1,7 @@
-```markdown
 # EduTrack - Full-Stack Student Management System
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Visit Website](https://img.shields.io/badge/Visit%20EduTrack-Click%20Here-blue?style=for-the-badge)](https://edu-track-pearl.vercel.app/)
 
 An end-to-end, role-based student management system designed for educational institutions. EduTrack provides a robust, secure, and intuitive platform for administrators, faculty, and students to manage courses, enrollments, grades, and attendance seamlessly.
 
