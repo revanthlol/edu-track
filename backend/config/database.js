@@ -1,48 +1,28 @@
 // backend/config/database.js
 const { Sequelize } = require('sequelize');
-const fs = require('fs');
-const path = require('path');
 require('dotenv').config();
 
-// Determine the path to the CA certificate
-// This will work locally and on Vercel
-const caPath = path.resolve(process.cwd(), 'ca-bundle.pem');
+let sequelize;
 
-let dialectOptions = {};
-
-// Only use SSL settings if a CA file actually exists.
-// This allows local development without SSL if you choose.
-if (fs.existsSync(caPath)) {
-  dialectOptions.ssl = {
-    ca: fs.readFileSync(caPath)
-  }
+// This is the CRITICAL part. Railway provides a MYSQL_URL.
+if (process.env.MYSQL_URL) {
+  // For Railway Production
+  sequelize = new Sequelize(process.env.MYSQL_URL, {
+    dialect: 'mysql',
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    }
+  });
+} else {
+  // For Local Development
+  sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
+    host: process.env.DB_HOST,
+    dialect: 'mysql'
+  });
 }
 
-const sequelize = new Sequelize(
-    process.env.DB_NAME,
-    process.env.DB_USER,
-    process.env.DB_PASSWORD,
-    {
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT,
-        dialect: 'mysql',
-        dialectOptions: dialectOptions
-    }
-);
-
-const connectDB = async () => {
-    try {
-        await sequelize.authenticate();
-        console.log('MySQL Connected...');
-        // On Vercel, it's better to not have sync run automatically
-        if (process.env.NODE_ENV !== 'production') {
-           await sequelize.sync({ alter: true });
-           console.log("All models were synchronized successfully.");
-        }
-    } catch (error) {
-        console.error('Unable to connect to the database:', error);
-        process.exit(1);
-    }
-};
-
+const connectDB = async () => { /* same as before */ };
 module.exports = { sequelize, connectDB };

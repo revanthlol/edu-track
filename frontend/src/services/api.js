@@ -1,20 +1,12 @@
 // frontend/src/services/api.js
 import axios from 'axios';
 
-// This creates a central, configured instance of axios for our entire app.
-const api = axios.create({
-    // The baseURL is set to '/api'.
-    // In local development, vite.config.js proxies this to http://localhost:3001.
-    // On Vercel, vercel.json rewrites this to our serverless backend function.
-    baseURL: '/api',
-    headers: {
-        'Content-Type': 'application/json'
-    }
-});
+// In production, Railway gives us the public URL for our backend.
+// In development, this is undefined, so it defaults to the local proxy.
+const baseURL = import.meta.env.VITE_API_URL || '/api';
 
-// This is an interceptor. It's a powerful feature that runs a function
-// BEFORE every single request is sent.
-api.interceptors.request.use(config => {
+const api = axios.create({ baseURL });
+api.interceptors.request.use(config => { 
     // 1. Get the token from local storage.
     const token = localStorage.getItem('token');
     
@@ -24,7 +16,5 @@ api.interceptors.request.use(config => {
     }
     
     // 3. Return the modified request config so the request can proceed.
-    return config;
-});
-
+    return config; });
 export default api;
