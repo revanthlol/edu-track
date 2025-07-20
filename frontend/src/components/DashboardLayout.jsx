@@ -3,78 +3,30 @@ import React, { useState, useEffect, useContext } from 'react';
 import { Outlet, useNavigate, Link, NavLink as RouterNavLink } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { jwtDecode } from 'jwt-decode';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { LogOut, User as UserIcon, Home, BookOpen, Settings, Award, Users } from 'lucide-react';
-import LoadingSpinner from './ui/LoadingSpinner';
 import { ThemeContext } from '../providers/ThemeProvider';
 
-const NavLink = ({ to, children }) => (
-    <RouterNavLink
-        to={to}
-        className={({ isActive }) =>
-            `flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${
-            isActive ? 'bg-muted text-primary' : 'text-muted-foreground'
-            }`
-        }
-    >
-        {children}
-    </RouterNavLink>
-);
+const NavLink = ({ to, children }) => ( <RouterNavLink to={to} className={({ isActive }) =>`flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:text-primary ${isActive ? 'bg-muted text-primary' : 'text-muted-foreground'}`}>{children}</RouterNavLink>);
 
 export default function DashboardLayout() {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useContext(ThemeContext);
-    const [user, setUser] = useState(null);
-
-    // *** THIS IS THE CRITICAL FIX ***
-    // The component is ONLY considered "loaded" when the 'user' state is definitively set to a user object.
-    // If the token is invalid or missing, this component will never stop "loading" because it will be unmounted
-    // during the redirect to the login page, preventing any further state changes. This is failsafe.
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            navigate('/login');
-            return; // Stop execution immediately if no token
-        }
-        try {
-            // If the token is valid, set the user state.
-            const decodedUser = jwtDecode(token);
-            setUser(decodedUser);
-        } catch (error) {
-            // If the token is invalid, clear it and force a redirect to login.
-            localStorage.removeItem('token');
-            navigate('/login');
-        }
-    }, [navigate]);
+    // We can safely assume the user is valid because PrivateRoute already checked.
+    // This component's only job is to decode the token to get the user's role and email for the UI.
+    const [user, setUser] = useState(() => jwtDecode(localStorage.getItem('token')));
 
     const handleLogout = () => {
         localStorage.removeItem('token');
         navigate('/login');
     };
 
-    // The component's loading state is now tied directly to the existence of a valid user object.
-    // This is architecturally sound and impossible to get stuck in.
-    if (!user) {
-        return <LoadingSpinner />;
-    }
-
-    // The rest of the component renders ONLY when a valid user exists.
     return (
         <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">
             <div className="hidden border-r bg-muted/40 md:block">
                 <div className="flex h-full max-h-screen flex-col gap-2">
                     <div className="flex h-14 items-center border-b px-4 lg:h-[60px] lg:px-6">
-                        <Link to="/" className="flex items-center gap-2 font-semibold">
-                            <BookOpen className="h-6 w-6 text-primary" />
-                            <span>EduTrack</span>
-                        </Link>
+                        <Link to="/" className="flex items-center gap-2 font-semibold"><BookOpen className="h-6 w-6 text-primary" /><span>EduTrack</span></Link>
                     </div>
                     <div className="flex-1">
                         <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
