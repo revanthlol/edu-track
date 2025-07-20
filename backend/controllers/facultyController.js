@@ -1,10 +1,6 @@
 // backend/controllers/facultyController.js
 const { sequelize } = require('../config/database');
-const Course = require('../models/Course');
-const Enrollment = require('../models/Enrollment');
-const User = require('../models/User');
-const Grade = require('../models/Grade');
-const Attendance = require('../models/Attendance');
+const { Course, Enrollment, User, Grade, Attendance } = require('../models');
 const isFaculty = (req, res) => { if (req.user.role !== 'faculty') { res.status(403).json({ message: 'Forbidden: Faculty access only.' }); return false; } return true; };
 exports.getMyCourses = async (req, res) => { if (!isFaculty(req, res)) return; try { const c = await Course.findAll({ where: { facultyId: req.user.id } }); res.json(c); } catch (e) { res.status(500).json({ message: 'Server error' }); } };
 exports.getEnrolledStudents = async (req, res) => { if (!isFaculty(req, res)) return; try { const c = await Course.findOne({ where: { id: req.params.courseId, facultyId: req.user.id } }); if (!c) return res.status(404).json({ message: 'Course not found or not assigned.' }); const e = await Enrollment.findAll({ where: { courseId: req.params.courseId }, include: [{ model: User, attributes: ['id', 'name', 'email'] }] }); res.json(e.map(i => i.User)); } catch (e) { res.status(500).json({ message: 'Server error' }); } };
@@ -44,4 +40,4 @@ exports.getAttendanceReport = async (req, res) => {
         });
         res.json(report);
     } catch (error) { res.status(500).json({ message: 'Server error fetching report.'}); }
-};
+};  

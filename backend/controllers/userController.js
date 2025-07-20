@@ -1,5 +1,5 @@
 // backend/controllers/userController.js
-const User = require('../models/User');
+const { User } = require('../models');
 
 // @desc    Get current user's profile
 // @route   GET /api/users/me

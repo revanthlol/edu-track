@@ -1,6 +1,5 @@
 // backend/controllers/studentController.js
-const Grade = require('../models/Grade');
-const Course = require('../models/Course');
+const { Grade, Course } = require('../models');
 
 exports.getMyGrades = async (req, res) => {
     if (req.user.role !== 'student') {
