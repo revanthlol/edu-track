@@ -9,6 +9,7 @@ if (process.env.MYSQL_URL) {
   // For Railway Production
   sequelize = new Sequelize(process.env.MYSQL_URL, {
     dialect: 'mysql',
+    dialectModule: require('mysql2'),
     dialectOptions: {
       ssl: {
         require: true,
@@ -22,7 +23,6 @@ if (process.env.MYSQL_URL) {
     host: process.env.DB_HOST,
     dialect: 'mysql'
   });
-dialectModule: require('mysql2')
 }
 
 const connectDB = async () => { /* same as before */ };
